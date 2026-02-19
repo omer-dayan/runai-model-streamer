@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "runai-model-streamer"
+dynamic = ["version"]
+description = "High-performance model streaming library"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0,<3.0.0",
+    "humanize",
+    "numpy",
+]
+
+[project.optional-dependencies]
+s3 = ["runai-model-streamer-s3"]
+gcs = ["runai-model-streamer-gcs"]
+azure = ["runai-model-streamer-azure"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"runai_model_streamer.libstreamer" = ["lib/*.so", "lib/*.dylib"]
+
+[tool.setuptools.dynamic]
+version = {attr = "runai_model_streamer._version.__version__"}
+
+[tool.cibuildwheel]
+# Skip builds we don't support
+skip = [
+    "pp*",           # No PyPy support
+    "*-win32",       # No 32-bit Windows
+    "*-musllinux*",  # No Alpine Linux
+    "*i686*",        # No 32-bit Linux
+]
+
+# Build for Python 3.9-3.12
+build = "cp39-* cp310-* cp311-* cp312-*"
+
+[tool.cibuildwheel.linux]
+# Use manylinux2014 for broad compatibility
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+
+# Run auditwheel to verify/repair wheels
+repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
+
+# Before build: copy pre-built native libraries
+before-build = [
+    "mkdir -p {package}/runai_model_streamer/libstreamer/lib",
+    "cp $NATIVE_LIBS_PATH/linux-$(uname -m)/*.so {package}/runai_model_streamer/libstreamer/lib/ || true",
+]
+
+[tool.cibuildwheel.macos]
+# Build separate wheels per architecture
+archs = ["x86_64", "arm64"]
+
+# Repair with delocate
+repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}"
+
+before-build = [
+    "mkdir -p {package}/runai_model_streamer/libstreamer/lib",
+    "cp $NATIVE_LIBS_PATH/macos-$(uname -m)/*.dylib {package}/runai_model_streamer/libstreamer/lib/ || true",
+]

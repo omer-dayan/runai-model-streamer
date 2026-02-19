@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "runai-model-streamer-s3"
+dynamic = ["version"]
+description = "S3 backend for runai-model-streamer"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+dependencies = [
+    "boto3",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"runai_model_streamer_s3" = ["*.so", "*.dylib"]
+
+[tool.setuptools.dynamic]
+version = {attr = "runai_model_streamer_s3._version.__version__"}
+
+[tool.setuptools.data-files]
+"runai_model_streamer/libstreamer/lib" = ["libstreamers3.so", "libstreamers3.dylib"]
+
+[tool.cibuildwheel]
+# Skip builds we don't support
+skip = [
+    "pp*",           # No PyPy support
+    "*-win32",       # No 32-bit Windows
+    "*-musllinux*",  # No Alpine Linux
+    "*i686*",        # No 32-bit Linux
+]
+
+# Build for Python 3.9-3.12
+build = "cp39-* cp310-* cp311-* cp312-*"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
+
+before-build = [
+    "cp $NATIVE_LIBS_PATH/linux-$(uname -m)/libstreamers3.so {package}/ || true",
+]
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}"
+
+before-build = [
+    "cp $NATIVE_LIBS_PATH/macos-$(uname -m)/libstreamers3.dylib {package}/ || true",
+]
