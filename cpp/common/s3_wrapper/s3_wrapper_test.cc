@@ -115,6 +115,37 @@ TEST_F(S3WrappertTest, Endpoint_Exists)
     EXPECT_EQ(params_.to_config(initial_params).endpoint_url, endpoint);
 }
 
+TEST_F(S3WrappertTest, Endpoint_S3_Exists)
+{
+    auto endpoint = utils::random::string();
+    utils::temp::Env endpoint_env("AWS_ENDPOINT_URL_S3", endpoint);
+
+    Credentials credentials_;
+    S3ClientWrapper::Params params_(std::make_shared<StorageUri>(uri), credentials_, utils::random::number<size_t>());
+    S3ClientWrapper wrapper(params);
+
+    std::vector<common::backend_api::ObjectConfigParam_t> initial_params;
+
+    EXPECT_EQ(params_.to_config(initial_params).endpoint_url, endpoint);
+}
+
+TEST_F(S3WrappertTest, Endpoint_S3_Takes_Precedence_Over_Generic)
+{
+    auto generic_endpoint = utils::random::string();
+    auto s3_endpoint = utils::random::string();
+    utils::temp::Env generic_env("AWS_ENDPOINT_URL", generic_endpoint);
+    utils::temp::Env s3_env("AWS_ENDPOINT_URL_S3", s3_endpoint);
+
+    Credentials credentials_;
+    S3ClientWrapper::Params params_(std::make_shared<StorageUri>(uri), credentials_, utils::random::number<size_t>());
+    S3ClientWrapper wrapper(params);
+
+    std::vector<common::backend_api::ObjectConfigParam_t> initial_params;
+
+    // AWS_ENDPOINT_URL_S3 should take precedence over AWS_ENDPOINT_URL
+    EXPECT_EQ(params_.to_config(initial_params).endpoint_url, s3_endpoint);
+}
+
 TEST_F(S3WrappertTest, Endpoint_In_Credentials)
 {
     auto endpoint = utils::random::string();

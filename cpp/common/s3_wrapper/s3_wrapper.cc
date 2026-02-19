@@ -27,7 +27,9 @@ S3ClientWrapper::Params::Params(std::shared_ptr<StorageUri> uri, const Credentia
     else
     {
         std::string endpoint;
-        bool override_endpoint = utils::try_getenv("AWS_ENDPOINT_URL", endpoint);
+        // Check for S3-specific endpoint first, then fall back to generic endpoint
+        bool override_endpoint = utils::try_getenv("AWS_ENDPOINT_URL_S3", endpoint) ||
+                                 utils::try_getenv("AWS_ENDPOINT_URL", endpoint);
         bool override_endpoint_flag = utils::getenv<bool>("RUNAI_STREAMER_OVERRIDE_ENDPOINT_URL", true);
         if (override_endpoint) // endpoint passed as environment variable
         {
